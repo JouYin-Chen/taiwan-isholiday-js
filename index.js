@@ -10,30 +10,20 @@ async function importResource() {
   // console.log(rawData)
   return rawData
 }
-const convertToObj = (inputArray) => {
-  const resultObject = {}
 
-  inputArray.forEach((item) => {
+const transformedObject = (inputArray) => {
+  return inputArray.reduce((result, item) => {
     const { date, ...rest } = item
-    resultObject[date] = rest
-    if (resultObject[date].isHoliday == "是") {
-      resultObject[date].isHoliday = true
-    } else {
-      resultObject[date].isHoliday = false
-    }
-  })
-
-  return resultObject
+    dateFormat = moment(date, "YYYY/M/D").format("YYYY/MM/DD")
+    rest.isHoliday = rest.isHoliday == "是" ? true : false
+    result[dateFormat] = rest
+    return result
+  }, {})
 }
 
-async function isHoliday(specifyDate = null) {
-  let holidy = convertToObj(await importResource())
-  const date =
-    specifyDate.length > 0
-      ? moment(specifyDate[0]).format("YYYY/MM/DD")
-      : moment(new Date()).tz("Asia/Taipei").format("YYYY/MM/DD")
-
-  // console.log(specifyDate, date)
+async function isHoliday(date) {
+  let holidy = transformedObject(await importResource())
+  // console.log(holidy, date)
   if (holidy[date] && holidy[date].isHoliday) {
     return true
   }
@@ -42,8 +32,12 @@ async function isHoliday(specifyDate = null) {
 
 ;(async () => {
   try {
-    const args = process.argv.slice(2)
-    console.log("isHolidy: ", await isHoliday(args))
+    const args = process.argv.slice(2)[0]
+    let specifyDate = args
+      ? moment(args).format("YYYY/MM/DD")
+      : moment(new Date()).tz("Asia/Taipei").format("YYYY/MM/DD")
+
+    console.log(`${specifyDate} is Holidy?: `, await isHoliday(specifyDate))
   } catch (e) {
     console.log(e)
     // Deal with the fact the chain failed
